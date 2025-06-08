@@ -1,14 +1,11 @@
-function PostTraversal ($curNode) {
-    $curId = (GetHashCode $curNode)
-    if ( $curNode.GetType().Name -eq 'PipelineAst' -and $valuelog[$iexPrefix + $curNode.PipelineElements[-1].Extent.StartOffset + ',' 
-          + $curNode.PipelineElements[-1].Extent.EndOffset] -eq 'Foreach-Object' -and `
-            $curNode.PipelineElements[-1].CommandElements[-1].GetType().Name -eq 'ScriptBlockExpressionAst') {
-        $count = $foreachCount[$iexPrefix + $curNode.PipelineElements[-1].Extent.StartOffset + ',' + $curNode.PipelineElements[-1].Extent.EndOffset]
-        $BlockString = $NodeString[(GetHashCode $curNode.PipelineElements[-1].CommandElements[-1].ScriptBlock.EndBlock)]
-        if ($count -eq $hookTimes -and -not $BlockString.Contains('$_')) { $NodeString[$curId] = $BlockString }
-    }
-    if ( $curNode.GetType().Name -eq 'FunctionDefinitionAst' ) {
-        $funcDeob[$curNode.Name] = $NodeString[$curId]
-        $NodeString[$curId] = $funcDef[$curNode.Name]
-    }
+function Stringify ($Object, $check = $true) {
+    #$global:Object2 = $Object
+    if ($check -and $null -ne $Object -and $null -ne $global:Rule['ALLOW_TYPE'] 
+                    -and -not $global:Rule['ALLOW_TYPE'].Contains($Object.GetType())) { throw 'Type denied!' }
+    if ($check -and $null -ne $Object -and ($global:Rule['BAN_TYPE'].Contains($Object.GetType()) 
+                    -or @('RuntimeAssembly') -contains $Object.GetType().Name)) { throw 'Type denied!' }
+    if ($global:Rule['STRONG_TYPE']) { $t = (../Deobfuscation/ConvertTo-Expression.ps1 $Object $check -Strong -Expand -1 -Depth 3); }
+    else { $t = (../Deobfuscation/ConvertTo-Expression.ps1 $Object $check -Expand -1 -Depth 3); }
+    if ($check -and $t -match '\[pscustomobject\]') { throw 'pscustomobject denied!' }
+    return $t
 }
